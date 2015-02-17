@@ -48,6 +48,8 @@ public class GoogleSearch {
             	//System.out.println( getPageTitle(link) );
             	System.out.println("  " + link);
             }
+            
+            // Download search result pages.
             downloadPages(links);
 
         } catch (IOException e) {
@@ -187,6 +189,16 @@ public class GoogleSearch {
         }
     }
     
+    /**
+     * Downloads the contents of URLs and write it into /working/directory/html/result_index.html
+     * 
+     * @param url
+     *            The list of URLs to download.
+     * 
+     * 
+     * @throws IOException
+     *             Thrown if there is an error downloading the content.
+     */
     private static void downloadPages(List<URL> links){
 			String currentDir = System.getProperty("user.dir");
 			File theDir = new File(currentDir + "/html");
@@ -206,6 +218,19 @@ public class GoogleSearch {
 	    		i++;
 	        }
     }
+    
+    /**
+     * Downloads the contents of URLs and extract page title. 
+     * The result will not contain any special characters.
+     * 
+     * @param url
+     *            The URL of page whose title is to be read.
+     * 
+     * @return Title of page located at url
+     * 
+     * @throws IOException
+     *             Thrown if there is an error downloading the content.
+     */
     
     private static String getPageTitle( URL url ){
     	String html;
