@@ -1,7 +1,9 @@
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -14,7 +16,7 @@ import java.util.List;
  * This program encodes command-line arguments as a Google search query,
  * downloads the results, and displays the corresponding links as output.
  */
-public final class GoogleSearch {
+public class GoogleSearch {
 
     /**
      * The main entry point of the program.
@@ -23,7 +25,7 @@ public final class GoogleSearch {
      *            The command-line arguments. These arguments are encoded as a
      *            Google search query.
      */
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         // Check for usage errors.
         if (args.length == 0) {
             System.out.println("usage: GoogleSearch query ...");
@@ -34,20 +36,21 @@ public final class GoogleSearch {
         // the results, or parsing the downloaded content.
         try {
             // Encode the command-line arguments as a Google search query.
-            final URL url = encodeGoogleQuery(args);
+            URL url = encodeGoogleQuery(args);
 
             // Download the content from Google.
             System.out.println("Downloading [" + url + "]...\n");
-            final String html = downloadString(url);
+            String html = downloadString(url);
 
             // Parse and display the links.
-            final List<URL> links = parseGoogleLinks(html);
-            for (final URL link : links){
-            	System.out.println( getPageTitle(link) );
+            List<URL> links = parseGoogleLinks(html);
+            for (URL link : links){
+            	//System.out.println( getPageTitle(link) );
             	System.out.println("  " + link);
             }
+            downloadPages(links);
 
-        } catch (final IOException e) {
+        } catch (IOException e) {
             // Display an error if anything fails.
             System.err.println(e.getMessage());
             System.exit(1);
@@ -66,9 +69,9 @@ public final class GoogleSearch {
      * @throws IOException
      *             Thrown if there is an error reading the stream.
      */
-    private static String downloadString(final InputStream stream)
+    private static String downloadString(InputStream stream)
             throws IOException {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         int ch;
         while (-1 != (ch = stream.read()))
             out.write(ch);
@@ -88,15 +91,15 @@ public final class GoogleSearch {
      * @throws IOException
      *             Thrown if there is an error downloading the content.
      */
-    private static String downloadString(final URL url) throws IOException {
-        final String agent = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US)";
+    private static String downloadString(URL url) throws IOException {
+        String agent = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US)";
         URLConnection connection = url.openConnection();
         connection.setRequestProperty("User-Agent", agent);
         String redirect = connection.getHeaderField("Location");
         if (redirect != null){
             connection = new URL(redirect).openConnection();
         }
-        final InputStream stream = connection.getInputStream();
+        InputStream stream = connection.getInputStream();
         return downloadString(stream);
     }
 
@@ -108,13 +111,13 @@ public final class GoogleSearch {
      * 
      * @return A URL for a Google search query based on the arguments.
      */
-    private static URL encodeGoogleQuery(final String[] args) {
+    private static URL encodeGoogleQuery(String[] args) {
         try {
-            final StringBuilder localAddress = new StringBuilder();
+            StringBuilder localAddress = new StringBuilder();
             localAddress.append("/search?q=");
 
             for (int i = 0; i < args.length; i++) {
-                final String encoding = URLEncoder.encode(args[i], "UTF-8");
+                String encoding = URLEncoder.encode(args[i], "UTF-8");
                 localAddress.append(encoding);
                 if (i + 1 < args.length)
                     localAddress.append("+");
@@ -122,7 +125,7 @@ public final class GoogleSearch {
 
             return new URL("http", "www.google.com", localAddress.toString());
 
-        } catch (final IOException e) {
+        } catch (IOException e) {
             // Errors should not occur under normal circumstances.
             throw new RuntimeException(
                     "An error occurred while encoding the query arguments.");
@@ -144,17 +147,17 @@ public final class GoogleSearch {
      *             Thrown if there is an error parsing the results from Google
      *             or if one of the links returned by Google is not a valid URL.
      */
-    private static List<URL> parseGoogleLinks(final String html)
+    private static List<URL> parseGoogleLinks(String html)
             throws IOException {
         // These tokens are adequate for parsing the HTML from Google. First,
         // find a heading-3 element with an "r" class. Then find the next anchor
         // with the desired link. The last token indicates the end of the URL
         // for the link.
-        final String token1 = "<h3 class=\"r\">";
-        final String token2 = "http";
-        final String token3 = "&amp;sa=U&amp";
+        String token1 = "<h3 class=\"r\">";
+        String token2 = "http";
+        String token3 = "&amp;sa=U&amp";
 
-        final List<URL> links = new ArrayList<URL>();
+        List<URL> links = new ArrayList<URL>();
 
         try {
             // Loop until all links are found and parsed. Find each link by
@@ -162,12 +165,12 @@ public final class GoogleSearch {
             // above.
             int index = 0;
             while (-1 != (index = html.indexOf(token1, index))) {
-                final int result = html.indexOf(token2, index);
-                final int urlStart = result; //+ token2.length();
-                final int urlEnd = html.indexOf(token3, result);
+                int result = html.indexOf(token2, index);
+                int urlStart = result; //+ token2.length();
+                int urlEnd = html.indexOf(token3, result);
                 if(urlStart < urlEnd){
                     String urlText = html.substring(urlStart, urlEnd);
-                    final URL url = new URL( URLDecoder.decode( urlText, "UTF-8" ) );
+                    URL url = new URL( URLDecoder.decode( urlText, "UTF-8" ) );
                     links.add(url);
                 }
 
@@ -176,12 +179,32 @@ public final class GoogleSearch {
 
             return links;
 
-        } catch (final MalformedURLException e) {
+        } catch (MalformedURLException e) {
         	System.out.println( e.getLocalizedMessage());
             throw new IOException("Failed to parse Google links 1.");
-        } catch (final IndexOutOfBoundsException e) {
+        } catch (IndexOutOfBoundsException e) {
             throw new IOException("Failed to parse Google links 2.");
         }
+    }
+    
+    private static void downloadPages(List<URL> links){
+			String currentDir = System.getProperty("user.dir");
+			File theDir = new File(currentDir + "/html");
+			theDir.mkdir();
+			int i = 0;
+	    	for (URL link : links){
+	    		String page;
+	    		try{
+	    			page = downloadString(link);
+		    		PrintWriter out = new PrintWriter(theDir.getPath() + "/result_" + i + ".html" , "UTF-8");
+		    		out.println(page);
+		    		out.close();
+		    		System.out.println("Downloaded: " + link.toString());
+	    		}catch(Exception e){
+	    			System.out.println(e.getMessage());
+	    		}
+	    		i++;
+	        }
     }
     
     private static String getPageTitle( URL url ){
